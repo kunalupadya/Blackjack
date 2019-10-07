@@ -141,103 +141,210 @@ class Blackjack():
         num = str(num)
         return (num,suit)
 
+class BlackjackInputRunner():
+    def __init__(self):
+        name = input("What is your name? ")
+        print("Hi, " + name + " - let's play blackjack!")
+        while True:
+            try:
+                userInput = input("How many chips do you want to start with? ")
+                val = int(userInput)
+                if val < 1:
+                    raise ArithmeticError
+                break
+            except ValueError:
+                print("That's not an int!")
+            except ArithmeticError:
+                print("Not a valid chipcount!")
+        self.startcount = val
+        self.game = Blackjack(val)
+
+    def startGame(self):
+        print("Let's get into it! Hit q when you want to stop")
+        self.game.dealHand()
+        # p.hitMe()
+        self.runGameLoop()
+
+    def runGameLoop(self):
+        play = True
+        bettingtime = True
+        while play:
+            if bettingtime:
+                bet, bettingtime, play = self.allowBetting(bettingtime, play)
+            bust, count = self.game.getState()
+            if bust:
+                print("You busted!")
+                bettingtime, play = self.askAboutNewGame(bettingtime, play)
+            else:
+                bettingtime, play = self.notBustedPrompt(bet, bettingtime, count, play)
+        print("Game over: You finished with " + str(
+            self.game.chips) + " chips, %.2f percent of your initial chipcount!" % (
+                      self.game.chips / self.startcount * 100))
+
+    def notBustedPrompt(self, bet, bettingtime, count, play):
+        myin = ""
+        while myin == "":
+            print("Total count right now: " + str(count))
+            myin = input("What will you do? Hit H to see another card, or hit S to stop. ")
+            if myin in {"H", "h"}:
+                self.game.hitMe()
+            elif myin in {"S", "s"}:
+                winner = self.game.dealAI()
+                if winner == "HUM":
+                    self.game.chips += bet * 2
+                if winner == "TIE":
+                    self.game.chips += bet
+                bettingtime, play = self.askAboutNewGame(bettingtime, play)
+            elif myin in {"Q", "q"}:
+                play = False
+            else:
+                print("That's not a valid response - try again!")
+                myin = ""
+        return bettingtime, play
+
+    def askAboutNewGame(self, bettingtime, play):
+        myin = ""
+        while myin == "":
+            if self.game.chips == 0:
+                play = False
+                print("You have no more chips :(")
+                break
+            myin = input(
+                "If you want to play again using the same deck (to learn how to count cards), play again by hitting A, or hit R to reset the deck and play again! Hit q to quit.")
+            bettingtime = True
+            if myin in {"A", "a"}:
+                self.game.dealHand()
+                # p.hitMe()
+            # elif myin in {"S", "s"}:
+            elif myin in {"R", "r"}:
+                self.game.makeDeck()
+                self.game.dealHand()
+            elif myin in {"Q", "q"}:
+                play = False
+            else:
+                print("That's not a valid response - try again!")
+                myin = ""
+        return bettingtime, play
+
+    def allowBetting(self, bettingtime, play):
+        while True:
+            try:
+                print("Chipcount: " + str(self.game.chips))
+                bet = input("How much do you want to bet? ")
+                val = int(bet)
+                if val < 1:
+                    raise ArithmeticError
+                if val > self.game.chips:
+                    print("You dont have that many chips!")
+                else:
+                    break
+            except ValueError:
+                print("That's not an int!")
+            except ArithmeticError:
+                print("Not a valid bet!")
+        bet = val
+        self.game.chips -= bet
+        bettingtime = False
+        return bet, bettingtime, play
 
 
 if __name__  == "__main__":
-    name = input("What is your name? ")
-    print("Hi, "+ name+" - let's play blackjack!")
-    while True:
-        try:
-            userInput = input("How many chips do you want to start with? ")
-            val = int(userInput)
-            if val < 1:
-                raise ArithmeticError
-            break
-        except ValueError:
-            print("That's not an int!")
-        except ArithmeticError:
-            print("Not a valid chipcount!")
-    # val = 100
-    p = Blackjack(val)
-    startcount = val
-    print("Let's get into it! Hit q when you want to stop")
-    p.dealHand()
-    # p.hitMe()
-    play = True
-    bettingtime = True
-    while play:
-        if bettingtime:
-            while True:
-                try:
-                    if p.chips == 0:
-                        play = False
-                    print("Chipcount: " + str(p.chips))
-                    bet = input("How much do you want to bet? ")
-                    val = int(bet)
-                    if val < 1:
-                        raise ArithmeticError
-                    if val>p.chips:
-                        print("You dont have that many chips!")
-                    else:
-                        break
-                except ValueError:
-                    print("That's not an int!")
-                except ArithmeticError:
-                    print("Not a valid bet!")
-            bet = val
-            p.chips-=bet
-            bettingtime = False
-        bust, count = p.getState()
-        if bust:
-            myin = ""
-            while myin == "":
-                myin = input("You busted! If you want to play again using the same deck (to learn how to count cards), play again by hitting A, or hit R to reset the deck and play again! Hit q to quit.")
-                bettingtime = True
-                if myin in {"A", "a"}:
-                    p.dealHand()
-                    # p.hitMe()
-                # elif myin in {"S", "s"}:
-                elif myin in {"R", "r"}:
-                    p.makeDeck()
-                    p.dealHand()
-                elif myin in {"Q", "q"}:
-                    play = False
-                else:
-                    print("That's not a valid response - try again!")
-                    myin = ""
-        else:
-            myin = ""
-            while myin == "":
-                print("Total count right now: "+ str(count))
-                myin = input("What will you do? Hit H to see another card, or hit S to stop. ")
-                if myin in {"H", "h"}:
-                    p.hitMe()
-                elif myin in {"S", "s"}:
-                    winner =p.dealAI()
-                    if winner == "HUM":
-                        p.chips+=bet*2
-                    if winner == "TIE":
-                        p.chips+=bet
-                    print("Chipcount: "+str(p.chips))
-                    myin1 = ""
-                    while myin1 == "":
-                        myin1 = input("If you want to play again using the same deck (to learn how to count cards), play again by hitting A, or hit R to reset the deck and play again! ")
-                        bettingtime = True
-                        if myin1 in {"A", "a"}:
-                            p.dealHand()
-                            # p.hitMe()
-                        # elif myin in {"S", "s"}:
-                        elif myin1 in {"R", "r"}:
-                            p.makeDeck()
-                            p.dealHand()
-                        elif myin1 in {"Q", "q"}:
-                            play = False
-                        else:
-                            print("That's not a valid response - try again!")
-                            myin1 = ""
-                elif myin in {"Q", "q"}:
-                    play = False
-                else:
-                    print("That's not a valid response - try again!")
-                    myin = ""
-    print("Game over: You finished with "+str(p.chips)+" chips, %.2f percent of your initial chipcount!" % (p.chips/startcount*100))
+    # name = input("What is your name? ")
+    # print("Hi, "+ name+" - let's play blackjack!")
+    # while True:
+    #     try:
+    #         userInput = input("How many chips do you want to start with? ")
+    #         val = int(userInput)
+    #         if val < 1:
+    #             raise ArithmeticError
+    #         break
+    #     except ValueError:
+    #         print("That's not an int!")
+    #     except ArithmeticError:
+    #         print("Not a valid chipcount!")
+    # # val = 100
+    # selfgame = Blackjack(val)
+    # startcount = val
+    # print("Let's get into it! Hit q when you want to stop")
+    # selfgame.dealHand()
+    # # p.hitMe()
+    # play = True
+    # bettingtime = True
+    # while play:
+    #     if bettingtime:
+    #         while True:
+    #             try:
+    #                 if selfgame.chips == 0:
+    #                     play = False
+    #                 print("Chipcount: " + str(selfgame.chips))
+    #                 bet = input("How much do you want to bet? ")
+    #                 val = int(bet)
+    #                 if val < 1:
+    #                     raise ArithmeticError
+    #                 if val>selfgame.chips:
+    #                     print("You dont have that many chips!")
+    #                 else:
+    #                     break
+    #             except ValueError:
+    #                 print("That's not an int!")
+    #             except ArithmeticError:
+    #                 print("Not a valid bet!")
+    #         bet = val
+    #         selfgame.chips-=bet
+    #         bettingtime = False
+    #     bust, count = selfgame.getState()
+    #     if bust:
+    #         myin = ""
+    #         while myin == "":
+    #             myin = input("You busted! If you want to play again using the same deck (to learn how to count cards), play again by hitting A, or hit R to reset the deck and play again! Hit q to quit.")
+    #             bettingtime = True
+    #             if myin in {"A", "a"}:
+    #                 selfgame.dealHand()
+    #                 # p.hitMe()
+    #             # elif myin in {"S", "s"}:
+    #             elif myin in {"R", "r"}:
+    #                 selfgame.makeDeck()
+    #                 selfgame.dealHand()
+    #             elif myin in {"Q", "q"}:
+    #                 play = False
+    #             else:
+    #                 print("That's not a valid response - try again!")
+    #                 myin = ""
+    #     else:
+    #         myin = ""
+    #         while myin == "":
+    #             print("Total count right now: "+ str(count))
+    #             myin = input("What will you do? Hit H to see another card, or hit S to stop. ")
+    #             if myin in {"H", "h"}:
+    #                 selfgame.hitMe()
+    #             elif myin in {"S", "s"}:
+    #                 winner =selfgame.dealAI()
+    #                 if winner == "HUM":
+    #                     selfgame.chips+= bet * 2
+    #                 if winner == "TIE":
+    #                     selfgame.chips+=bet
+    #                 print("Chipcount: " + str(selfgame.chips))
+    #                 myin1 = ""
+    #                 while myin1 == "":
+    #                     myin1 = input("If you want to play again using the same deck (to learn how to count cards), play again by hitting A, or hit R to reset the deck and play again! ")
+    #                     bettingtime = True
+    #                     if myin1 in {"A", "a"}:
+    #                         selfgame.dealHand()
+    #                         # p.hitMe()
+    #                     # elif myin in {"S", "s"}:
+    #                     elif myin1 in {"R", "r"}:
+    #                         selfgame.makeDeck()
+    #                         selfgame.dealHand()
+    #                     elif myin1 in {"Q", "q"}:
+    #                         play = False
+    #                     else:
+    #                         print("That's not a valid response - try again!")
+    #                         myin1 = ""
+    #             elif myin in {"Q", "q"}:
+    #                 play = False
+    #             else:
+    #                 print("That's not a valid response - try again!")
+    #                 myin = ""
+    # print("Game over: You finished with " + str(selfgame.chips) + " chips, %.2f percent of your initial chipcount!" % (selfgame.chips / startcount * 100))
+    game = BlackjackInputRunner()
+    game.startGame()
